@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>LIRS AWARD ENTRADAS</title>
+  
+
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entradas</title>
+<style>
+  body { background:#374151; color:white; font-family:sans-serif; padding:20px; }
+  .seat-grid { display:flex; flex-direction:column; gap:8px; align-items:center }
+  .row { display:flex; gap:8px }
+  .seat { width:44px; height:44px; border-radius:9999px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:600; box-shadow:0 6px 0 rgba(0,0,0,0.25); border:4px solid rgba(0,0,0,0.12); }
+  .white { background:#ffffff; color:#000; cursor:pointer; }
+  .yellow { background:#f6c244; color:#000; }
+  .red { background:#ef4444; color:#fff; }
+  .black { background:#000000; color:#fff; }
+  .selected { outline:4px solid rgba(96,165,250,0.9); transform:scale(1.06); }
+  .panel { max-width:980px; margin:0 auto; background:rgba(31,41,55,0.9); padding:18px; border-radius:12px }
+  .form-row { display:flex; gap:12px; margin-top:12px; flex-wrap:wrap }
+  input { background:#111827; border:1px solid rgba(255,255,255,0.06); padding:8px; border-radius:8px; color:white; min-width:220px }
+  button { background:#16a34a; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer }
+  .muted { color:#9ca3af }
+</style>
+</head>
+<body>
+<div class="panel">
+  <h1>Reservar entradas</h1>
+  <div class="seat-grid" id="seatGrid"></div>
+
+  <div class="form-row">
+    <div>
+      <label class="muted">Discord username</label>
+      <input id="discordInput" placeholder="ej: user#1234">
+    </div>
+    <div>
+      <label class="muted">Haxball nickname</label>
+      <input id="haxInput" placeholder="tu nickname en Haxball">
+    </div>
+    <div style="align-self:flex-end">
+      <button id="reserveBtn">Reservar</button>
+    </div>
+  </div>
+
+  <div id="message" style="margin-top:12px;color:#fde68a"></div>
+</div>
+
+<script>
+const STORAGE_KEY = "entradas_demo_html_v1";
+
+// Matriz inicial con 2 blancos extra en lugar de los 2 rojos
+const initialSeats = [
+  ["black","black","black","yellow","yellow","yellow","yellow","yellow","yellow","black","black","black"],
+  ["black","white","white","white","white","yellow","yellow","white","white","white","white","black"],
+  ["black","black","white","white","black","black","black","black","white","white","black","black"],
+  ["black","white","black","black","black","black","black","black","black","black","white","black"]
+];
+
+let seats = loadSeats();
+let selected = null;
+
+function loadSeats() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) { console.warn(e); }
+  return initialSeats.map(r=>r.slice());
+}
+
+function saveSeats() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(seats));
+}
+
+function renderSeats() {
+  const grid = document.getElementById("seatGrid");
+  grid.innerHTML = "";
+  seats.forEach((row,r) => {
+    const rowDiv = document.createElement("div");
+    rowDiv.className = "row";
+    row.forEach((seat,c) => {
+      let type = typeof seat === "string" ? seat : seat.type;
+      let user = typeof seat === "object" ? seat.user : "";
+      const btn = document.createElement("button");
+      btn.className = `seat ${type}`;
+      if (type === "white") btn.addEventListener("click", () => selectSeat(r,c,btn));
+      if (selected && selected.r === r && selected.c === c) btn.classList.add("selected");
+      btn.textContent = type === "red" && user ? user : "";
+      rowDiv.appendChild(btn);
+    });
+    grid.appendChild(rowDiv);
+  });
+}
+
+function selectSeat(r,c,btn) {
+  if (selected && selected.r === r && selected.c === c) {
+    selected = null;
+  } else {
+    selected = { r, c };
+  }
+  renderSeats();
+}
+
+document.getElementById("reserveBtn").addEventListener("click", () => {
+  const discord = document.getElementById("discordInput").value.trim();
+  const hax = document.getElementById("haxInput").value.trim();
+  const msg = document.getElementById("message");
+
+  msg.textContent = "";
+  if (!selected) {
+    msg.textContent = "Selecciona un asiento blanco antes de reservar.";
+    return;
+  }
+  if (!discord || !hax) {
+    msg.textContent = "Introduce tu Discord y tu nickname de Haxball.";
+    return;
+  }
+
+  const { r, c } = selected;
+  seats[r][c] = { type: "red", user: discord, hax };
+  saveSeats();
+  selected = null;
+  document.getElementById("discordInput").value = "";
+  document.getElementById("haxInput").value = "";
+  msg.textContent = "¡Entrada reservada!";
+  renderSeats();
+});
+
+renderSeats();
+</script>
+</body>
+</html>
+<!-- partial -->
+  
+</body>
+</html>
